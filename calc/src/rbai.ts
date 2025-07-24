@@ -20,6 +20,7 @@ function calcMoveScores(user: Pokemon, target: Pokemon): number {
       moveScore += 1;
     }
   }
+  return moveScore;
 }
 
 function calcMoveScore(move: Move, user: Pokemon, target: Pokemon): number {
@@ -204,10 +205,53 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon): number {
     case "Acid Armor":
     case "Cosmic Power":
       return calcDefenseSetup(user, target, move);
-      
+
+    case "Focus Energy":
+    case "Laser Focus":
+      return calcCritMoves(user, target, hasHighCritMove(user));
+
     default:
-      return 0; // Default score for moves not specifically handled
+      return calcAttackMove(user, target, move)
   }
+}
+
+function hasHighCritMove(user: Pokemon): boolean{
+  const highCritMoves: string[] = [
+    "10,000,000 Volt Thunderbolt",
+    "Aeroblast",
+    "Air Cutter",
+    "Aqua Cutter",
+    "Attack Order",
+    "Blaze Kick",
+    "Crabhammer",
+    "Cross Chop",
+    "Cross Poison",
+    "Dire Claw",
+    "Drill Run",
+    "Esper Wing",
+    "Ivy Cudgel",
+    "Karate Chop",
+    "Leaf Blade",
+    "Night Slash",
+    "Poison Tail",
+    "Psycho Cut",
+    "Razor Leaf",
+    "Razor Wind",
+    "Shadow Blast",
+    "Shadow Claw",
+    "Sky Attack",
+    "Slash",
+    "Snipe Shot",
+    "Spacial Rend",
+    "Stone Edge",
+    "Triple Arrows"
+  ];
+  for (const move of user.moves) {
+    if (highCritMoves.includes(move)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 
@@ -263,7 +307,7 @@ function calcPursuit(user: Pokemon, target: Pokemon, canKO: boolean): number {
 }
 
 function calcFellStinger(user: Pokemon, target: Pokemon, doesKo: boolean): number {
-  if(user.attack <= 5 && doesKo){
+  if(user.boosts.atk <= 5 && doesKo){
     if(user.stats.spe >= target.stats.spe){
       return 21; //20% chance to be 23
     }
@@ -591,10 +635,10 @@ function calcBellyDrum(user: Pokemon, target: Pokemon): number {
   }
 }
 
-function calcCritMoves(user: Pokemon, target: Pokemon): number {
+function calcCritMoves(user: Pokemon, target: Pokemon, hasHighCritMove: boolean): number {
   if(target.ability === "Battle Armor" || target.ability === "Shell Armor") {
     return -20;
-  } else if (user.ability === "Sniper" || user.ability === "Super Luck" || user.item === "Scope Lens"){
+  } else if (user.ability === "Sniper" || user.ability === "Super Luck" || user.item === "Scope Lens" || hasHighCritMove){
     return 7;
   }
   return 6;
