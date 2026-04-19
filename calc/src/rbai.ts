@@ -1,8 +1,11 @@
 import {Move} from './move';
+import { MoveName } from './data/interface';
 import {Pokemon} from './pokemon';
+import { Generations } from './data';
 
+const gen = Generations.get(8)
 
-function calcMoveScores(user: Pokemon, target: Pokemon): number {
+function calcAttackMove(move: Move, user: Pokemon, target: Pokemon): number {
   const highestDmgMove  = 6;
   const probAddTwo = 0.2;
   const slowKill = 9;
@@ -10,13 +13,13 @@ function calcMoveScores(user: Pokemon, target: Pokemon): number {
   var moveScore = 0;
   // ai rolls a random damage roll for all attacks and highest gets highest dmg move. If multiple kill, all get the bonus
   if (moveKills(move)){
-    if (user.stats.spe >= target.stats.spe || (move.hasPriority() &&  user.stats.spe < target.stats.spe)) {
+    if (user.stats.spe >= target.stats.spe || (move.priority > 1 &&  user.stats.spe < target.stats.spe)) {
       moveScore += 6;
     }
-    else if (! user.isFaster(target)){
+    else if (! (user.stats.spe > target.stats.spe)){
       moveScore += 3;
     }
-    if (user.ability in ["Moxie", "Beast Boost", "Chilling Neigh", "Grim Neigh"]){
+    if (user.ability && user.ability in ["Moxie", "Beast Boost", "Chilling Neigh", "Grim Neigh"]){
       moveScore += 1;
     }
   }
@@ -32,7 +35,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon): number {
       return calcFutureSight(user, target);
 
     case "Relic Song":
-      return calcRelicSong(user.isInBaseForm()); // Assuming there's an isInBaseForm method
+      return calcRelicSong(user); // Assuming there's an isInBaseForm method
 
     case "Sucker Punch":
       return calcSuckerPunch(target.wasLastMove); // Assuming there's a wasLastMove property
@@ -90,7 +93,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon): number {
     case "Light Screen":
     case "Reflect":
     case "Aurora Veil":
-      return calcScreens(user, target.hasCorrespondingMove); // Assuming this property exists
+      return calcScreens(user, target, move); // Assuming this property exists
 
     case "Substitute":
       return calcSubstitute(user, target);
@@ -162,7 +165,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon): number {
 
     // Encore
     case "Encore":
-      return calcEncore(user, target, target.lastMove);
+      return calcEncore(user, target, battle.lastMove);
 
     // Counter/Mirror Coat
     case "Counter":
@@ -211,7 +214,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon): number {
       return calcCritMoves(user, target, hasHighCritMove(user));
 
     default:
-      return calcAttackMove(user, target, move)
+      return calcAttackMove(move, user, target)
   }
 }
 
@@ -277,8 +280,8 @@ function calcFutureSight(user: Pokemon, target: Pokemon): number {
   return 6;
 }
 
-function calcRelicSong(inBaseForm: boolean): number {
-  if(inBaseForm) {
+function calcRelicSong(user: Pokemon): number {
+  if(user.name === "Meloetta") {
     return 10;
   }
   return -20;
@@ -349,16 +352,16 @@ function calcStickyWeb(user: Pokemon, firstTurn: boolean): number {
 
 function calcProtect(user: Pokemon, target: Pokemon, lastMoveProtect: boolean): number {
   var score = 6;
-  if(user.status === "Poison" || user.status === "Burn" || user.seeded) {// there are some other checks im lazy
+  if(user.status === "psn" || user.status === "brn" || user.seeded) {// there are some other checks im lazy
     score -= 2;
   }
-  if(target.status === "Poison" || target.status === "Burn" || target.seeded){
+  if(target.status === "psn" || target.status === "brn" || target.seeded){
     score += 1;
   }
   if(lastMoveProtect) {
     return -20; //50% of time
   }
-
+  return score;
 }
 
 function calcImprison(user: Pokemon, target: Pokemon): number {
@@ -416,8 +419,16 @@ function calcTerrain(user: Pokemon): number {
   return 8;
 }
 
-function calcScreens(user: Pokemon, targetHasCorrespondingMove: boolean): number {
+function calcScreens(user: Pokemon, target: Pokemon, move: Move): number {
   var score = 6;
+  var targetHasCorrespondingMove = false;
+  if (move.name == "Light Screen") {
+    targetHasCorrespondingMove = hasMoveOfSplit(target, "Special");
+  } else if (move.name == "Reflect") {
+    targetHasCorrespondingMove = hasMoveOfSplit(target, "Physical");
+  } else {
+    targetHasCorrespondingMove = true;
+  }
   if (targetHasCorrespondingMove) {
     if(user.item === "Light Clay") {
       score += 1;
@@ -429,10 +440,10 @@ function calcScreens(user: Pokemon, targetHasCorrespondingMove: boolean): number
 
 function calcSubstitute(user: Pokemon, target: Pokemon): number {
   var score = 6;
-  if(target.status() === "Sleep") {
+  if(target.status === "slp") {
     score += 2;
   }
-  if(target.isSeeded() && user.stats.spe >= target.stats.spe) {
+  if(target.seeded && user.stats.spe >= target.stats.spe) {
     score += 2;
   }
   //There is a random -1 here
@@ -446,7 +457,7 @@ function calcSubstitute(user: Pokemon, target: Pokemon): number {
 }
 
 function calcBoomMove(user: Pokemon, target: Pokemon, isPartyEmpty: boolean): number {
-  if(isPartyEmpty || target.type1 == "Ghost" || target.type2 == "Ghost") {
+  if(isPartyEmpty || target.types.includes("Ghost")) {
     return -20;
   }
   if(user.curHP()/user.maxHP() <= 0.1) {
@@ -474,7 +485,7 @@ function calcMomento(user: Pokemon, target: Pokemon): number {
 //never used if last mon
 }
 
-function calcPar(user: Pokeon, target: Pokemon): number {
+function calcPar(user: Pokemon, target: Pokemon): number {
   if((target.stats.spe > user.stats.spe && user.stats.spe >= 0.25*target.stats.spe) || user.moves.includes("Hex") || target.status() === "Confused" || target.status() === "Infatuated") {
     return 8
   }
@@ -483,7 +494,7 @@ function calcPar(user: Pokeon, target: Pokemon): number {
 
 function calcWillo(user: Pokemon, target: Pokemon): number {
   var score = 6;
-  if(target.moves.hasPhysical()) {
+  if(hasMoveOfSplit(target, "Physical")) {
     score += 1;
   }
   if(user.moves.includes("Hex")) {
@@ -493,9 +504,9 @@ function calcWillo(user: Pokemon, target: Pokemon): number {
 }
 
 function calcTrick(user: Pokemon): number {
-  if(user.item() === "Toxic Orb" || user.item() === "Flame Orb" || user.item() === "Black Sludge") {
+  if(user.item === "Toxic Orb" || user.item === "Flame Orb" || user.item === "Black Sludge") {
     return 6; //50% of the time its 7
-  } if(user.item() === "Iron Ball" || user.item() === "Lagging Tail" || user.item() === "Sticky Barb") {
+  } if(user.item === "Iron Ball" || user.item === "Lagging Tail" || user.item === "Sticky Barb") {
     return 7;
   }
   return 5;
@@ -530,7 +541,7 @@ function calcGeneralSetup(user: Pokemon, target: Pokemon, move: Move): number {
   if(target.maxDamage(user) >= 1) {
     return -20;
   }
-  if(target.ability() === "Unaware" && ! ["Power-up Punch", "Swords Dance", "Howl"].includes(move.name())) {
+  if(target.ability === "Unaware" && ! ["Power-up Punch", "Swords Dance", "Howl"].includes(move.name)) {
     return -20;
   }
   return 6;
@@ -540,7 +551,7 @@ function calcGeneralSetup(user: Pokemon, target: Pokemon, move: Move): number {
 
 function calcMixedSetupMoves(user: Pokemon, target: Pokemon, move: Move): number {
   const physicalMoves = ["Coil", "Bulk Up", "No Retreat"];
-  if(physicalMoves.includes(move.name())) {
+  if(physicalMoves.includes(move.name)) {
     if(hasOnlyMovesOfSplit(target, "Physical")) {
       return calcDefenseSetup(user, target, move);
     } else{
@@ -557,7 +568,7 @@ function calcMixedSetupMoves(user: Pokemon, target: Pokemon, move: Move): number
 
 function calcOffenseSetup(user: Pokemon, target: Pokemon, move: Move): number {
   var score = 6;
-  if(target.status === "Frozen" || target.status === "Sleep" || target.recharging()) {
+  if(target.status === "frz" || target.status === "slp" || target.recharging()) {
     score += 3;
   }
   if(user.stats.spe <= target.stats.spe && target.maxDamage(user) / user.curHP() <= 2) {
@@ -571,10 +582,10 @@ function calcDefenseSetup(user: Pokemon, target: Pokemon, move: Move): number {
   if(user.stats.spe <= target.stats.spe && target.maxDamage(user) / user.curHP() <= 2) {
     score -= 5;
   }
-  if(target.status === "Frozen" || target.status === "Sleep" || target.recharging()) {
+  if(target.status === "frz" || target.status === "slp" || target.recharging()) {
     score += 2;
   }
-  if(move.name() === "Cosmic Power" && (user.def <= 1 || user.spdef <= 1)) {
+  if(move.name === "Cosmic Power" && (user.stats.def <= 1 || user.stats.spd <= 1)) {
     score += 2;
   }
   return score;
@@ -589,7 +600,7 @@ function calcSpeedMoves(user: Pokemon, target: Pokemon): number {
 
 function calcSpAtkUpMoves(user: Pokemon, target: Pokemon): number {
   var score = 6;
-  if (target.status === "Frozen" || target.status === "Sleep" || target.recharging()) {
+  if (target.status === "frz" || target.status === "slp" || target.recharging()) {
     score += 3;
   } else if(target.maxDamage(user)/user.curHP() >= 3) {
     score += 1;
@@ -599,7 +610,7 @@ function calcSpAtkUpMoves(user: Pokemon, target: Pokemon): number {
   } else if(target.maxDamage(user) / user.curHP() <= 2 && user.stats.spe <= target.stats.spe) {
     score -= 5;
   }
-  if(user.spAtk >= 2) {
+  if(user.boosts.spa >= 2) {
     score -= 1;
   }
   return score;
@@ -607,7 +618,7 @@ function calcSpAtkUpMoves(user: Pokemon, target: Pokemon): number {
 
 function calcShellSmash(user: Pokemon, target: Pokemon): number {
   var score = 6;
-  if (target.status === "Frozen" || target.status === "Sleep" || target.recharging()) {
+  if (target.status === "frz" || target.status === "slp" || target.recharging()) {
     score += 3;
   }
   if (target.maxDamage(user) <=  user.curHP()){//TODO: Add defense drops to the max damage
@@ -626,7 +637,7 @@ function calcBellyDrum(user: Pokemon, target: Pokemon): number {
   if (user.item === "Sitrus Berry") {
     damage -= 0.25;
   }
-  if(target.status === "Frozen" || target.status === "Sleep" || target.recharging()) {
+  if(target.status === "frz" || target.status === "slp" || target.recharging()) {
     return 9;
   } else if (target.maxDamage(user) < user.curHP() - damage) {
     return 8;
@@ -657,6 +668,7 @@ function calcDestinyBond(user: Pokemon, target: Pokemon): number {
   } else if(user.stats.spe < target.stats.spe){
     return 5; // 50% of the time its 6
   }
+  return -20;
 }
 
 function calcRecoveryMoves(user: Pokemon, target: Pokemon, move: Move): number {
@@ -676,7 +688,7 @@ function calcRecoveryMoves(user: Pokemon, target: Pokemon, move: Move): number {
 
 function calcSunRecMoves(user: Pokemon, target: Pokemon, move: Move, isSun: boolean): number{
   const sunShouldRecover = shouldRecover(user, target, move);
-  const recalcShouldRecover = shouldRecover(user, target, move.make("Recover");
+  const recalcShouldRecover = shouldRecover(user, target, new Move(gen, "Recover"));
   //TODO: Fix move creation
   if(user.curHP()/user.maxHP() === 1){
     return -20;
@@ -692,11 +704,11 @@ function calcSunRecMoves(user: Pokemon, target: Pokemon, move: Move, isSun: bool
 }
 
 function calcRest(user: Pokemon,target: Pokemon, isRaining: boolean): number {
-  if(shouldRecover(user, target, move.make("Rest"))) {
-    if((user.item() === "Lum Berry" || user.item() === "Chesto Berry") ||
+  if(shouldRecover(user, target, new Move(gen, "Rest"))) {
+    if((user.item === "Lum Berry" || user.item === "Chesto Berry") ||
        (user.moves.includes("Sleep Talk") || user.moves.includes("Snore")) ||
-       (user.ability() === "Shed Skin" || user.ability() === "Early Bird") ||
-       (user.ability() === "Hydration" && isRaining)){
+       (user.ability === "Shed Skin" || user.ability === "Early Bird") ||
+       (user.ability === "Hydration" && isRaining)){
       return 8;
     }else{
       return 7;
@@ -707,9 +719,9 @@ function calcRest(user: Pokemon,target: Pokemon, isRaining: boolean): number {
 }
 
 function calcTaunt(user: Pokemon, target: Pokemon, isTRActive: boolean, isAVActive: boolean): number{
-  if(target.moves().includes("Trick Room") && isTRActive) {
+  if(target.moves.includes("Trick Room") && isTRActive) {
     return 9;
-  }else if(target.moves().includes("Defog") && isAVActive) {
+  }else if(target.moves.includes("Defog") && isAVActive) {
     return 9;
   }
   return 5;
@@ -728,13 +740,13 @@ function calcEncore(user: Pokemon, target: Pokemon, lastMove: Move): number{
 function calcCounterMirrorCoat(user: Pokemon, target: Pokemon, move: Move): number{
   var moveScore = 6;
   var category = "Physical";
-  if (move.name() === "Mirror Coat") {
+  if (move.name === "Mirror Coat") {
     category = "Special"
   }
-  if(hasOnlyMovesOfSplit(target, category) && target.canKill() && (user.curHP()/user.maxHP() == 1 && (user.item() === "Focus Sash" || user.ability() === "Sturdy"))) {
+  if(hasOnlyMovesOfSplit(target, category) && target.canKill() && (user.curHP()/user.maxHP() == 1 && (user.item === "Focus Sash" || user.ability === "Sturdy"))) {
     moveScore += 2;
   }
-  if (target.canKill() && !(user.curHP()/user.maxHP() === 1 && (user.item() === "Focus Sash" || user.ability() === "Sturdy"))){
+  if (target.canKill() && !(user.curHP()/user.maxHP() === 1 && (user.item === "Focus Sash" || user.ability === "Sturdy"))){
     moveScore -= 20;
   }
   if(!target.canKill() && hasOnlyMovesOfSplit(target, category)) {
@@ -746,11 +758,13 @@ function calcCounterMirrorCoat(user: Pokemon, target: Pokemon, move: Move): numb
   if(hasStatusMove(target)){
     moveScore -= 1; //75% no change
   }
+  return moveScore;
 }
 
 function hasStatusMove(target: Pokemon): boolean {
-  for(const move of target.moves()){
-    if( move.category === "Status") {
+  for(const move of target.moves){
+    const checkMove = new Move(gen, move)
+    if(checkMove.category === "Status") {
       return true;
     }
   }
@@ -759,35 +773,59 @@ function hasStatusMove(target: Pokemon): boolean {
 
 function hasOnlyMovesOfSplit(target: Pokemon, moveCat: string): boolean {
   if(moveCat === "Physical"){
-    for(const move of target.moves()){
-      if(move.category === "Special") {
+    for(const move of target.moves){
+      const checkMove = new Move(gen, move)
+      if(checkMove.category === "Special") {
         return false;
       }
     }
     return true;
   } else if(moveCat === "Special"){
-    for(const move of target.moves()){
-      if move.category === "Physical") {
+    for(const move of target.moves){
+      const checkMove = new Move(gen, move)
+      if (checkMove.category === "Physical") {
         return false;
+      }
+    }
+    return true;
+  }
+  return true;
+}
+
+function hasMoveOfSplit(target: Pokemon, moveCat: string): boolean {
+  if(moveCat === "Physical"){
+    for(const move of target.moves){
+      const checkMove = new Move(gen, move)
+      if(checkMove.category === "Physical") {
+        return true;
+      }
+    }
+    return false;
+  } else if(moveCat === "Special"){
+    for(const move of target.moves){
+      const checkMove = new Move(gen, move)
+      if (checkMove.category === "Special") {
+        return true;
       }
     }
     return false;
   }
+  return true;
 }
 
 function shouldRecover(user: Pokemon, target: Pokemon, healMove: Move): number {
   var percentage = getMovePercentage(healMove);
-  if(user.stats == "Toxic"){
+  if(user.status == "tox"){
     return 0;
   }
   if(target.maxDamage() >= percentage) {
     return 0;
   }
-  if(user.stats.spe() >= target.stats.spe()) {
-    if (target.maxDamage() <= user.curHP()/user.maxHP() + percentage) && target.maxDamage() >= user.curHP()()) {
+  if(user.stats.spe >= target.stats.spe) {
+    if (target.maxDamage() <= user.curHP()/user.maxHP() + percentage && target.maxDamage() >= user.curHP()) {
       return 1;
     }
-    else if (target.maxDamage() <= user.curHP()()){
+    else if (target.maxDamage() <= user.curHP()){
       if(user.curHP()/user.maxHP() <= 0.66 && user.curHP()/user.maxHP() >= 0.4){
         return 0.5;
       }else if (user.curHP()/user.maxHP() <= 0.4){
@@ -825,5 +863,3 @@ function willSwitch(user: Pokemon, target: Pokemon, team: Pokemon[]): boolean {
   // THEN switch chance is 50% -> this fn just checks all the conditions
   return false;
 }
-
-
