@@ -11,14 +11,17 @@ interface BattleState {
   lastMove?: Move;
 }
 
-function calcAttackMove(move: Move, user: Pokemon, target: Pokemon): number {
+function calcAttackMove(move: Move, user: Pokemon, target: Pokemon, field: Field): number {
   const highestDmgMove  = 6;
   const probAddTwo = 0.2;
   const slowKill = 9;
   const fastKill = 12;
   var moveScore = 0;
+
   // ai rolls a random damage roll for all attacks and highest gets highest dmg move. If multiple kill, all get the bonus
-  if (moveKills(move)){
+  const result = calculate(gen, user, target, move, field);
+  const canKill = result.range()[0] >= target.curHP();
+  if (canKill){
     if (user.stats.spe >= target.stats.spe || (move.priority > 1 &&  user.stats.spe < target.stats.spe)) {
       moveScore += 6;
     }
@@ -43,7 +46,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
   }
   switch (move.name) {
     case "Acid Spray":
-      return calcAttackMove(move, user, target) + calcAcidSpray();
+      return calcAttackMove(move, user, target, battle.field) + calcAcidSpray();
 
     case "Future Sight":
       return calcFutureSight(user, target, battle.field);
@@ -55,10 +58,10 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
       return calcSuckerPunch(battle.lastMove!); // Assuming there's a wasLastMove property
 
     case "Pursuit":
-      return calcPursuit(user, target, move.canKO(target)); // Assuming there's a canKO method
+      return calcPursuit(user, target, maxDamage(target, user, battle.field) >= user.curHP() / user.maxHP()); // Assuming there's a canKO method
 
     case "Fell Stinger":
-      return calcFellStinger(user, target, move.canKO(target));
+      return calcFellStinger(user, target, maxDamage(target, user, battle.field) >= user.curHP() / user.maxHP());
 
     case "Rollout":
       return calcRollout();
@@ -228,7 +231,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
       return calcCritMoves(user, target, hasHighCritMove(user));
 
     default:
-      return calcAttackMove(move, user, target)
+      return calcAttackMove(move, user, target, battle.field)
   }
 }
 
