@@ -184,7 +184,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
     // Counter/Mirror Coat
     case "Counter":
     case "Mirror Coat":
-      return calcCounterMirrorCoat(user, target, move);
+      return calcCounterMirrorCoat(user, target, move, battle.field);
 
     // Speed boosting moves
     case "Agility":
@@ -785,19 +785,21 @@ function calcEncore(user: Pokemon, target: Pokemon, lastMove: Move): number{
   return -20.;
 }
 
-function calcCounterMirrorCoat(user: Pokemon, target: Pokemon, move: Move): number{
+function calcCounterMirrorCoat(user: Pokemon, target: Pokemon, move: Move, field: Field): number{
   var moveScore = 6;
   var category = "Physical";
   if (move.name === "Mirror Coat") {
     category = "Special"
   }
-  if(hasOnlyMovesOfSplit(target, category) && target.canKill() && (user.curHP()/user.maxHP() == 1 && (user.item === "Focus Sash" || user.ability === "Sturdy"))) {
+  const canKill = maxDamage(target, user, field) >= user.curHP() / user.maxHP();
+  const hasSurvivalItem = user.curHP() / user.maxHP() === 1 && (user.item === "Focus Sash" || user.ability === "Sturdy");
+  if(hasOnlyMovesOfSplit(target, category) && canKill && hasSurvivalItem) {
     moveScore += 2;
   }
-  if (target.canKill() && !(user.curHP()/user.maxHP() === 1 && (user.item === "Focus Sash" || user.ability === "Sturdy"))){
+  if(canKill && !hasSurvivalItem){
     moveScore -= 20;
   }
-  if(!target.canKill() && hasOnlyMovesOfSplit(target, category)) {
+  if(!canKill && hasOnlyMovesOfSplit(target, category)) {
     moveScore += 2; // 20% adds nothing
   }
   if(user.stats.spe >= target.stats.spe) {
