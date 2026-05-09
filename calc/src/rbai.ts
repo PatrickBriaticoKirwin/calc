@@ -9,6 +9,7 @@ const gen = Generations.get(8)
 interface BattleState {
   field: Field;
   lastMove?: Move;
+  userParty: Pokemon[];
 }
 
 function calcAttackMove(move: Move, user: Pokemon, target: Pokemon, field: Field): number {
@@ -118,7 +119,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
     // Boom moves
     case "Self-Destruct":
     case "Explosion":
-      return calcBoomMove(user, target, user.isPartyEmpty); // Assuming this property exists
+      return calcBoomMove(user, target, battle.userParty.every(p => p === user || p.curHP() === 0));
 
     case "Memento":
       return calcMomento(user, target);

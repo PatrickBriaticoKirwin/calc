@@ -20,6 +20,7 @@ export namespace State {
     teraType?: I.TypeName;
     toxicCounter?: number;
     moves?: I.MoveName[];
+    turnsOnField?: number;
     overrides?: Partial<I.Specie>;
   }
 

@@ -37,6 +37,7 @@ export class Pokemon implements State.Pokemon {
   toxicCounter: number;
 
   moves: I.MoveName[];
+  turnsOnField: number;
 
   constructor(
     gen: I.Generation,
@@ -100,6 +101,11 @@ export class Pokemon implements State.Pokemon {
     this.status = options.status || '';
     this.toxicCounter = options.toxicCounter || 0;
     this.moves = options.moves || [];
+    this.turnsOnField = options.turnsOnField ?? 0;
+  }
+
+  get isFirstTurn(): boolean {
+    return this.turnsOnField === 0;
   }
 
   maxHP(original = false) {
@@ -166,6 +172,7 @@ export class Pokemon implements State.Pokemon {
       teraType: this.teraType,
       toxicCounter: this.toxicCounter,
       moves: this.moves.slice(),
+      turnsOnField: this.turnsOnField,
       overrides: this.species,
     });
   }
