@@ -38,6 +38,7 @@ export class Pokemon implements State.Pokemon {
 
   moves: I.MoveName[];
   turnsOnField: number;
+  substitute: boolean;
 
   constructor(
     gen: I.Generation,
@@ -102,6 +103,7 @@ export class Pokemon implements State.Pokemon {
     this.toxicCounter = options.toxicCounter || 0;
     this.moves = options.moves || [];
     this.turnsOnField = options.turnsOnField ?? 0;
+    this.substitute = options.substitute ?? false;
   }
 
   get isFirstTurn(): boolean {
@@ -173,6 +175,7 @@ export class Pokemon implements State.Pokemon {
       toxicCounter: this.toxicCounter,
       moves: this.moves.slice(),
       turnsOnField: this.turnsOnField,
+      substitute: this.substitute,
       overrides: this.species,
     });
   }

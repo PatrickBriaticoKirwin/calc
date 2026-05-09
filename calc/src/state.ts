@@ -21,6 +21,7 @@ export namespace State {
     toxicCounter?: number;
     moves?: I.MoveName[];
     turnsOnField?: number;
+    substitute?: boolean;
     overrides?: Partial<I.Specie>;
   }
 

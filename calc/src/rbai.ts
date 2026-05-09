@@ -86,7 +86,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
       return calcImprison(user, target);
 
     case "Baton Pass":
-      return calcBatonPass(user, target, user.isLastMon); // Assuming this property exists
+      return calcBatonPass(user, target,  battle.userParty.every(p => p === user || p.curHP() === 0)); // Assuming this property exists
 
     case "Tailwind":
       return calcTailwind(user, target);
@@ -234,6 +234,10 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
     default:
       return calcAttackMove(move, user, target, battle.field)
   }
+}
+
+function hasStatBoost(pokemon: Pokemon): boolean {
+  return (Object.values(pokemon.boosts) as number[]).some(v => v > 0);
 }
 
 function hasHighCritMove(user: Pokemon): boolean{
@@ -411,7 +415,7 @@ function calcBatonPass(user: Pokemon, target: Pokemon, isLastMon: boolean): numb
   if(isLastMon) {
     return -20;
   }
-  if(user.substitue || user.hasStatIncrease) {
+  if(user.substitute || hasStatBoost(user)) {
     return 14;
   }return 0;
 }
