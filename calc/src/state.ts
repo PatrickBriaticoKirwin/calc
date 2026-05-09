@@ -22,6 +22,7 @@ export namespace State {
     moves?: I.MoveName[];
     turnsOnField?: number;
     substitute?: boolean;
+    mustRecharge?: boolean;
     overrides?: Partial<I.Specie>;
   }
 

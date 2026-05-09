@@ -39,6 +39,7 @@ export class Pokemon implements State.Pokemon {
   moves: I.MoveName[];
   turnsOnField: number;
   substitute: boolean;
+  mustRecharge: boolean;
 
   constructor(
     gen: I.Generation,
@@ -104,6 +105,11 @@ export class Pokemon implements State.Pokemon {
     this.moves = options.moves || [];
     this.turnsOnField = options.turnsOnField ?? 0;
     this.substitute = options.substitute ?? false;
+    this.mustRecharge = options.mustRecharge ?? false;
+  }
+
+  recharging(): boolean {
+    return this.mustRecharge;
   }
 
   get isFirstTurn(): boolean {
@@ -176,6 +182,7 @@ export class Pokemon implements State.Pokemon {
       moves: this.moves.slice(),
       turnsOnField: this.turnsOnField,
       substitute: this.substitute,
+      mustRecharge: this.mustRecharge,
       overrides: this.species,
     });
   }

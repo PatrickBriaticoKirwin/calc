@@ -13,10 +13,10 @@ interface BattleState {
 }
 
 function calcAttackMove(move: Move, user: Pokemon, target: Pokemon, field: Field): number {
-  const highestDmgMove  = 6;
-  const probAddTwo = 0.2;
-  const slowKill = 9;
-  const fastKill = 12;
+  // const highestDmgMove  = 6;
+  // const probAddTwo = 0.2;
+  // const slowKill = 9;
+  // const fastKill = 12;
   var moveScore = 0;
 
   // ai rolls a random damage roll for all attacks and highest gets highest dmg move. If multiple kill, all get the bonus
@@ -74,7 +74,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
       return calcSpikes(battle.field.defenderSide.spikes, firstTurn); // Assuming these properties exist
 
     case "Sticky Web":
-      return calcStickyWeb(user, firstTurn);
+      return calcStickyWeb(firstTurn);
 
     case "Protect":
     case "Detect":
@@ -86,7 +86,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
       return calcImprison(user, target);
 
     case "Baton Pass":
-      return calcBatonPass(user, target,  battle.userParty.every(p => p === user || p.curHP() === 0)); // Assuming this property exists
+      return calcBatonPass(user,  battle.userParty.every(p => p === user || p.curHP() === 0)); // Assuming this property exists
 
     case "Tailwind":
       return calcTailwind(user, target);
@@ -95,7 +95,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
       return calcTrickRoom(user, target, battle.field.isTrickRoom);
 
     case "Fake Out":
-      return calcFakeout(user, target, user.isFirstTurn);
+      return calcFakeout(target, user.isFirstTurn);
 
     case "Final Gambit":
       return calcFinalGambit(user, target, battle.field);
@@ -122,7 +122,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
       return calcBoomMove(user, target, battle.userParty.every(p => p === user || p.curHP() === 0));
 
     case "Memento":
-      return calcMomento(user, target);
+      return calcMomento(user);
 
     // Status moves
     case "Thunder Wave":
@@ -143,7 +143,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
     case "Sing":
     case "Grasswhistle":
     case "Spore":
-      return calcSleepMoves(user, target, move);
+      return calcSleepMoves(user, target);
 
     // Recovery moves in sun
     case "Synthesis":
@@ -159,6 +159,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
     case "Coil":
     case "Bulk Up":
     case "No Retreat":
+    case "Calm Mind":  
       return calcMixedSetupMoves(user, target, move, battle.field);
 
     // Shell Smash
@@ -179,7 +180,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
 
     // Taunt
     case "Taunt":
-      return calcTaunt(user, target, battle.field.isTrickRoom, battle.field.defenderSide.isAuroraVeil);
+      return calcTaunt(target, battle.field.isTrickRoom, battle.field.defenderSide.isAuroraVeil);
 
     // Encore
     case "Encore":
@@ -213,7 +214,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
     // Poison moves
     case "Toxic":
     case "Poison Powder":
-      return calcPoisonMoves(user, target, move);
+      return calcPoisonMoves(user, target);
 
     // General setup moves
     case "Dragon Dance":
@@ -237,7 +238,8 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
 }
 
 function hasStatBoost(pokemon: Pokemon): boolean {
-  return (Object.values(pokemon.boosts) as number[]).some(v => v > 0);
+  const boostableStats = ['atk', 'def', 'spa', 'spd', 'spe'] as const;
+  return boostableStats.some(stat => pokemon.boosts[stat] > 0);
 }
 
 function hasHighCritMove(user: Pokemon): boolean{
@@ -376,7 +378,7 @@ function calcSpikes(hasSpikes: number, firstTurn: boolean): number {
   return score;
 }
 
-function calcStickyWeb(user: Pokemon, firstTurn: boolean): number {
+function calcStickyWeb(firstTurn: boolean): number {
   if(firstTurn) {
     return 12; // 25% return 9
   }
@@ -411,7 +413,7 @@ function calcImprison(user: Pokemon, target: Pokemon): number {
   return -20;
 }
 
-function calcBatonPass(user: Pokemon, target: Pokemon, isLastMon: boolean): number {
+function calcBatonPass(user: Pokemon, isLastMon: boolean): number {
   if(isLastMon) {
     return -20;
   }
@@ -436,7 +438,7 @@ function calcTrickRoom(user:Pokemon, target:Pokemon, isTrickRoom: boolean): numb
   return 5;
 }
 
-function calcFakeout(user: Pokemon, target: Pokemon, firstTurn: boolean): number {
+function calcFakeout(target: Pokemon, firstTurn: boolean): number {
   if((target.ability !== "Shield Dust" || target.ability !== "Inner Focus") && firstTurn){
     return 9;
   }
@@ -487,7 +489,8 @@ function calcSubstitute(user: Pokemon, target: Pokemon, battle: BattleState): nu
     score += 2;
   }
   //There is a random -1 here
-  if(target.moves.includes(soundMoves)) {
+  const hasSoundMoves = hasSoundMove(target)
+  if(hasSoundMoves) {
     score -= 8;
   }
   if(user.curHP() / user.maxHP() <= 0.5 || target.ability === "Infiltrator") {
@@ -495,6 +498,51 @@ function calcSubstitute(user: Pokemon, target: Pokemon, battle: BattleState): nu
   }
   return score;
 }
+
+function hasSoundMove(target: Pokemon): boolean {
+  for (const move of target.moves) {
+    if (soundMoves.includes(move)) {
+      return true;
+    }
+  }
+  return false;
+}
+const soundMoves = [
+"Growl",//	 Normal 	Status
+"Roar",//	 Normal 	Status
+"Sing",	// Normal 	Status
+"Supersonic",//	 Normal 	Status
+"Screech",// Normal 	Status
+"Snore",	 //Normal 	Special
+"Perish Song",	// Normal 	Status
+"Heal Bell",	 //Normal 	Status
+"Uproar",	 //Normal 	Special
+"Hyper Voice", //	 Normal 	Special
+"Metal Sound", //	 Steel 	Status
+"Grass Whistle", //	 Grass 	Status
+"Howl",	// Normal 	Status
+"Bug Buzz",//	 Bug 	Special
+"Chatter",	// Flying 	Special
+"Round",	// Normal 	Special
+"Echoed Voice",//	 Normal 	Special
+"Relic Song",	// Normal 	Special
+"Snarl",	// Dark 	Special
+"Noble Roar",//	 Normal 	Status
+"Disarming Voice",//	 Fairy 	Special
+"Parting Shot",//	 Dark 	Status
+"Boomburst",//	 Normal 	Special
+"Confide",	// Normal 	Status
+"Sparkling Aria", //	 Water 	Special
+"Clanging Scales",//	 Dragon 	Special
+"Clangorous Soulblaze",//	 Dragon 	Special
+"Clangorous Soul",	// Dragon 	Status
+"Overdrive",	// Electric 	Special
+"Eerie Spell",//	 Psychic 	Special
+"Torch Song",	// Fire 	Special
+"Dragon Cheer",	// Dragon 	Status
+"Alluring Voice",	// Fairy 	Special
+"Psychic Noise"
+]
 
 function calcBoomMove(user: Pokemon, target: Pokemon, isPartyEmpty: boolean): number {
   if(isPartyEmpty || target.types.includes("Ghost")) {
@@ -512,7 +560,7 @@ function calcBoomMove(user: Pokemon, target: Pokemon, isPartyEmpty: boolean): nu
 //if only 1 mon left in the players party and the ai's party is empty its just a -1
 }
 
-function calcMomento(user: Pokemon, target: Pokemon): number {
+function calcMomento(user: Pokemon): number {
   if(user.curHP()/user.maxHP() <= 0.1) {
     return 16;
   } else if(user.curHP()/user.maxHP() <= 0.33) {
@@ -554,7 +602,7 @@ function calcTrick(user: Pokemon): number {
   return 5;
 }
 
-function calcSleepMoves(user: Pokemon, target: Pokemon, move: Move): number {
+function calcSleepMoves(user: Pokemon, target: Pokemon): number {
   var score = 6;
   if(canSleep(target)) {
     score += 1;
@@ -570,12 +618,13 @@ function calcSleepMoves(user: Pokemon, target: Pokemon, move: Move): number {
 }
 
 function canSleep(target: Pokemon): Boolean {
+  if(target.status || target.hasAbility("Insomnia") || target.hasAbility("Vital Spirit")) {
+    return false;
+  }
   return true;
-  //TODO: Cleanup this function
-
 }
 
-function calcPoisonMoves(user: Pokemon, target: Pokemon, move: Move): number {
+function calcPoisonMoves(user: Pokemon, target: Pokemon): number {
   var score = 6;
   if(target.curHP()/target.maxHP() >= 0.2 && canPoison(target)) { // THIS ONLY HAPPENS 38% of the time???@?@???@??
     if(user.moves.includes(new Move(gen,"Hex").name) || user.moves.includes(new Move(gen,"Venom Drench").name) || user.moves.includes(new Move(gen,"Venoshock").name) || user.ability === "Merciless") {
@@ -586,11 +635,10 @@ function calcPoisonMoves(user: Pokemon, target: Pokemon, move: Move): number {
 }
 
 function canPoison(target: Pokemon): Boolean {
-  if(target.hasType('Steel') || target.hasType('Poison')){
+  if(target.hasType('Steel') || target.hasType('Poison') || target.status || target.hasAbility("Poison Heal") || target.hasAbility("Magic Guard")){
     return false;
   }
   return true;
-// TODO: clean up this function
 }
 
 function calcGeneralSetup(user: Pokemon, target: Pokemon, move: Move, field: Field): number {
@@ -601,8 +649,6 @@ function calcGeneralSetup(user: Pokemon, target: Pokemon, move: Move, field: Fie
     return -20;
   }
   return 6;
-  // we can either just return the calc of defense/offense based on move name here or have this in the control flow
-  // TODO: decide and clean up control flow
 }
 
 function calcMixedSetupMoves(user: Pokemon, target: Pokemon, move: Move, field: Field): number {
@@ -611,18 +657,18 @@ function calcMixedSetupMoves(user: Pokemon, target: Pokemon, move: Move, field: 
     if(hasOnlyMovesOfSplit(target, "Physical")) {
       return calcDefenseSetup(user, target, move, field);
     } else{
-      return calcOffenseSetup(user, target, move, field);
+      return calcOffenseSetup(user, target, field);
     }
   }else{
     if(hasOnlyMovesOfSplit(target, "Special")) {
       return calcDefenseSetup(user, target, move, field);
     } else {
-      return calcOffenseSetup(user, target, move, field);
+      return calcOffenseSetup(user, target, field);
     }
   }
 }
 
-function calcOffenseSetup(user: Pokemon, target: Pokemon, move: Move, field: Field): number {
+function calcOffenseSetup(user: Pokemon, target: Pokemon, field: Field): number {
   var score = 6;
   if(target.status === "frz" || target.status === "slp" || target.recharging()) {
     score += 3;
@@ -774,7 +820,7 @@ function calcRest(user: Pokemon, target: Pokemon, isRaining: boolean, field: Fie
   return 5;
 }
 
-function calcTaunt(user: Pokemon, target: Pokemon, isTRActive: boolean, isAVActive: boolean): number{
+function calcTaunt(target: Pokemon, isTRActive: boolean, isAVActive: boolean): number{
   if(target.moves.includes(new Move(gen, "Trick Room").name) && isTRActive) {
     return 9;
   }else if(target.moves.includes(new Move(gen, "Defog").name) && isAVActive) {
