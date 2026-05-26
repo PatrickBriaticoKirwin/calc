@@ -49,6 +49,17 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
     case "Acid Spray":
       return calcAttackMove(move, user, target, battle.field) + calcAcidSpray();
 
+    case "Trop Kick":
+    case "Breaking Swipe":
+    case "Lunge":
+      return calcAtkDropMove(user, target, hasMoveOfSplit(target, "Physical"))
+    case "Skitter Smack":
+    case "Mystical Fire":
+    case "Snarl":
+    case "Spirit Break":
+    case "Struggle Bug":
+      return calcAtkDropMove(user, target, hasMoveOfSplit(target, "Special"))
+
     case "Future Sight":
       return calcFutureSight(user, target, battle.field);
 
