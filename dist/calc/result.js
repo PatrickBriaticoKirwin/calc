@@ -54,7 +54,7 @@ var Result = (function () {
     };
     Result.prototype.moveDesc = function (notation) {
         if (notation === void 0) { notation = '%'; }
-        return (0, desc_1.displayMove)(this.gen, this.attacker, this.defender, this.move, this.damage, notation);
+        return (0, desc_1.displayMove)(this.gen, this.attacker, this.defender, this.move, this.damage, notation, this.rawDesc.aiScore);
     };
     Result.prototype.recovery = function (notation) {
         if (notation === void 0) { notation = '%'; }

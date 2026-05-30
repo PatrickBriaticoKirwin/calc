@@ -6,22 +6,26 @@ import {calculate} from './calc';
 
 const gen = Generations.get(8)
 
-interface BattleState {
+export interface BattleState {
   field: Field;
   lastMove?: Move;
   userParty: Pokemon[];
 }
 
-function calcAttackMove(move: Move, user: Pokemon, target: Pokemon, field: Field): number {
-  // const highestDmgMove  = 6;
-  // const probAddTwo = 0.2;
-  // const slowKill = 9;
-  // const fastKill = 12;
+export function calcAttackMove(move: Move, user: Pokemon, target: Pokemon, field: Field): number {
   var moveScore = 0;
 
-  // ai rolls a random damage roll for all attacks and highest gets highest dmg move. If multiple kill, all get the bonus
   const result = calculate(gen, user, target, move, field);
   const canKill = result.range()[0] >= target.curHP();
+  const thisDmgFraction = result.range()[1] / target.maxHP();
+  const maxDmgFraction = maxDamage(user, target, field);
+
+  // Highest damaging move gets +6 (~80%) or +8 (~20%).
+  // If multiple moves KO, all are considered highest damaging.
+  if (canKill || thisDmgFraction >= maxDmgFraction) {
+    moveScore += 6;
+  }
+
   if (canKill){
     if (user.stats.spe >= target.stats.spe || (move.priority > 1 &&  user.stats.spe < target.stats.spe)) {
       moveScore += 6;
@@ -29,14 +33,14 @@ function calcAttackMove(move: Move, user: Pokemon, target: Pokemon, field: Field
     else if (! (user.stats.spe > target.stats.spe)){
       moveScore += 3;
     }
-    if (user.ability && user.ability in ["Moxie", "Beast Boost", "Chilling Neigh", "Grim Neigh"]){
+    if (user.ability && ["Moxie", "Beast Boost", "Chilling Neigh", "Grim Neigh"].includes(user.ability)){
       moveScore += 1;
     }
   }
   return moveScore;
 }
 
-function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: BattleState): number {
+export function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: BattleState): number {
   var lastMove = battle.lastMove ?? true;
   var firstTurn = null;
   if(lastMove) {
@@ -106,7 +110,7 @@ function calcMoveScore(move: Move, user: Pokemon, target: Pokemon, battle: Battl
       return calcTrickRoom(user, target, battle.field.isTrickRoom);
 
     case "Fake Out":
-      return calcFakeout(target, user.isFirstTurn);
+      return calcFakeout(target, user.isFirstTurn());
 
     case "Final Gambit":
       return calcFinalGambit(user, target, battle.field);
@@ -297,8 +301,8 @@ function hasHighCritMove(user: Pokemon): boolean{
 function maxDamage(attacker: Pokemon, defender: Pokemon, field: Field): number {
   if (attacker.moves.length === 0) return 0;
   let maxFraction = 0;
-  for (const moveName of attacker.moves) {
-    const move = new Move(gen, moveName);
+  for (const moveEntry of attacker.moves) {
+    const move = typeof moveEntry === 'string' ? new Move(gen, moveEntry) : moveEntry as Move;
     if (move.category === 'Status') continue;
     const result = calculate(gen, attacker, defender, move, field);
     const fraction = result.range()[1] / defender.maxHP();
@@ -398,17 +402,17 @@ function calcStickyWeb(firstTurn: boolean): number {
 
 function calcProtect(user: Pokemon, target: Pokemon, battle: BattleState): number {
   const protectMoves = ["Protect", "Detect", "King's Shield", "Baneful Bunker"];
-  if (protectMoves.includes(battle.lastMove!.name)) {
+  if (battle.lastMove && protectMoves.includes(battle.lastMove!.name)) {
     var lastMoveProtect = true;
   }
   else {
     var lastMoveProtect = false;
   }
   var score = 6;
-  if(user.status === "psn" || user.status === "brn" || battle.field.attackerSide.isSeeded) {// there are some other checks im lazy
+  if(user.status === "psn" || user.status === "brn" || battle.field.attackerSide.isSeeded) {// there are some other checks im lazy its perish song counter and drowsy/yawned
     score -= 2;
   }
-  if(target.status === "psn" || target.status === "brn" || battle.field.defenderSide.isSeeded){
+  if(target.status === "psn" || target.status === "brn" || battle.field.defenderSide.isSeeded){ // this is also missing perish song and drowsy
     score += 1;
   }
   if(lastMoveProtect) {

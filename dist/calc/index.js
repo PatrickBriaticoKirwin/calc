@@ -96,4 +96,7 @@ __createBinding(exports, types_1, "TYPE_CHART");
 var stats_1 = require("./stats");
 __createBinding(exports, stats_1, "STATS");
 __createBinding(exports, stats_1, "Stats");
+var rbai_1 = require("./rbai");
+__createBinding(exports, rbai_1, "calcMoveScore");
+__createBinding(exports, rbai_1, "calcAttackMove");
 //# sourceMappingURL=index.js.map

@@ -42,3 +42,4 @@ export { SPECIES } from './data/species';
 export { NATURES } from './data/natures';
 export { TYPE_CHART } from './data/types';
 export { STATS, Stats } from './stats';
+export { calcMoveScore, calcAttackMove, BattleState } from './rbai';

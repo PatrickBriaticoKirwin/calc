@@ -25,6 +25,9 @@ export declare class Pokemon implements State.Pokemon {
     status: I.StatusName | '';
     toxicCounter: number;
     moves: I.MoveName[];
+    turnsOnField: number;
+    substitute: boolean;
+    mustRecharge: boolean;
     constructor(gen: I.Generation, name: string, options?: Partial<State.Pokemon> & {
         curHP?: number;
         ivs?: Partial<I.StatsTable> & {
@@ -37,6 +40,8 @@ export declare class Pokemon implements State.Pokemon {
             spc?: number;
         };
     });
+    recharging(): boolean;
+    isFirstTurn(): boolean;
     maxHP(original?: boolean): number;
     curHP(original?: boolean): number;
     hasAbility(...abilities: string[]): boolean;

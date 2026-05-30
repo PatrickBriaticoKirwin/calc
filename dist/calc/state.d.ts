@@ -19,6 +19,9 @@ export declare namespace State {
         teraType?: I.TypeName;
         toxicCounter?: number;
         moves?: I.MoveName[];
+        turnsOnField?: number;
+        substitute?: boolean;
+        mustRecharge?: boolean;
         overrides?: Partial<I.Specie>;
     }
     interface Move {
@@ -38,6 +41,7 @@ export declare namespace State {
         isMagicRoom?: boolean;
         isWonderRoom?: boolean;
         isGravity?: boolean;
+        isTrickRoom?: boolean;
         isAuraBreak?: boolean;
         isFairyAura?: boolean;
         isDarkAura?: boolean;

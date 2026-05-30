@@ -112,7 +112,7 @@ export class Pokemon implements State.Pokemon {
     return this.mustRecharge;
   }
 
-  get isFirstTurn(): boolean {
+  isFirstTurn(): boolean {
     return this.turnsOnField === 0;
   }
 

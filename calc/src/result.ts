@@ -59,7 +59,7 @@ export class Result {
   }
 
   moveDesc(notation = '%') {
-    return displayMove(this.gen, this.attacker, this.defender, this.move, this.damage, notation);
+    return displayMove(this.gen, this.attacker, this.defender, this.move, this.damage, notation, this.rawDesc.aiScore);
   }
 
   recovery(notation = '%') {

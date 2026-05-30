@@ -36,7 +36,7 @@ function display(gen, attacker, defender, move, field, damage, rawDesc, notation
     return koChanceText ? "".concat(desc, ": ").concat(damageText, " -- ").concat(koChanceText) : "".concat(desc, ": ").concat(damageText);
 }
 exports.display = display;
-function displayMove(gen, attacker, defender, move, damage, notation) {
+function displayMove(gen, attacker, defender, move, damage, notation, aiScore) {
     if (notation === void 0) { notation = '%'; }
     var _a = __read((0, result_1.damageRange)(damage), 2), minDamage = _a[0], maxDamage = _a[1];
     var min = (typeof minDamage === 'number' ? minDamage : minDamage[0] + minDamage[1]) * move.hits;
@@ -45,8 +45,12 @@ function displayMove(gen, attacker, defender, move, damage, notation) {
     var maxDisplay = toDisplay(notation, max, defender.maxHP());
     var recoveryText = getRecovery(gen, attacker, defender, move, damage, notation).text;
     var recoilText = getRecoil(gen, attacker, defender, move, damage, notation).text;
-    return "".concat(minDisplay, " - ").concat(maxDisplay).concat(notation).concat(recoveryText &&
+    var text = "".concat(minDisplay, " - ").concat(maxDisplay).concat(notation).concat(recoveryText &&
         " (".concat(recoveryText, ")")).concat(recoilText && " (".concat(recoilText, ")"));
+    if (aiScore !== undefined) {
+        text += " | AI: ".concat(aiScore);
+    }
+    return text;
 }
 exports.displayMove = displayMove;
 function getRecovery(gen, attacker, defender, move, damage, notation) {
@@ -785,6 +789,9 @@ function buildDescription(description, attacker, defender) {
     }
     if (description.isWonderRoom) {
         output += ' in Wonder Room';
+    }
+    if (description.aiScore !== undefined) {
+        output += " | AI: ".concat(description.aiScore);
     }
     return output;
 }

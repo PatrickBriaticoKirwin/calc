@@ -49,6 +49,7 @@ export interface RawDesc {
   terrain?: Terrain;
   weather?: Weather;
   isDefenderDynamaxed?: boolean;
+  aiScore?: number;
 }
 
 export function display(
@@ -83,7 +84,8 @@ export function displayMove(
   defender: Pokemon,
   move: Move,
   damage: Damage,
-  notation = '%'
+  notation = '%',
+  aiScore?: number
 ) {
   const [minDamage, maxDamage] = damageRange(damage);
   const min = (typeof minDamage === 'number' ? minDamage : minDamage[0] + minDamage[1]) * move.hits;
@@ -95,8 +97,12 @@ export function displayMove(
   const recoveryText = getRecovery(gen, attacker, defender, move, damage, notation).text;
   const recoilText = getRecoil(gen, attacker, defender, move, damage, notation).text;
 
-  return `${minDisplay} - ${maxDisplay}${notation}${recoveryText &&
+  let text = `${minDisplay} - ${maxDisplay}${notation}${recoveryText &&
     ` (${recoveryText})`}${recoilText && ` (${recoilText})`}`;
+  if (aiScore !== undefined) {
+    text += ` | AI: ${aiScore}`;
+  }
+  return text;
 }
 
 export function getRecovery(
@@ -946,6 +952,9 @@ function buildDescription(description: RawDesc, attacker: Pokemon, defender: Pok
   }
   if (description.isWonderRoom) {
     output += ' in Wonder Room';
+  }
+  if (description.aiScore !== undefined) {
+    output += ` | AI: ${description.aiScore}`;
   }
   return output;
 }

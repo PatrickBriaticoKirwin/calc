@@ -31,7 +31,7 @@ var Pokemon = (function () {
     function Pokemon(gen, name, options) {
         var e_1, _a;
         if (options === void 0) { options = {}; }
-        var _b;
+        var _b, _c, _d, _e;
         this.species = (0, util_1.extend)(true, {}, gen.species.get((0, util_1.toID)(name)), options.overrides);
         this.gen = gen;
         this.name = options.name || name;
@@ -83,7 +83,16 @@ var Pokemon = (function () {
         this.status = options.status || '';
         this.toxicCounter = options.toxicCounter || 0;
         this.moves = options.moves || [];
+        this.turnsOnField = (_c = options.turnsOnField) !== null && _c !== void 0 ? _c : 0;
+        this.substitute = (_d = options.substitute) !== null && _d !== void 0 ? _d : false;
+        this.mustRecharge = (_e = options.mustRecharge) !== null && _e !== void 0 ? _e : false;
     }
+    Pokemon.prototype.recharging = function () {
+        return this.mustRecharge;
+    };
+    Pokemon.prototype.isFirstTurn = function () {
+        return this.turnsOnField === 0;
+    };
     Pokemon.prototype.maxHP = function (original) {
         if (original === void 0) { original = false; }
         return !original && this.isDynamaxed && this.species.baseStats.hp !== 1
@@ -187,6 +196,9 @@ var Pokemon = (function () {
             teraType: this.teraType,
             toxicCounter: this.toxicCounter,
             moves: this.moves.slice(),
+            turnsOnField: this.turnsOnField,
+            substitute: this.substitute,
+            mustRecharge: this.mustRecharge,
             overrides: this.species
         });
     };
